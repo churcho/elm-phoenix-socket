@@ -320,4 +320,40 @@ syncState newState state =
 
 syncDiff : PresenceDiff -> PresenceState -> PresenceState
 syncDiff diff state =
-    diff.joins
+    let
+        mergeLeaves : PresenceState -> String -> PresenceStateMetaWrapper -> PresenceStateMetaWrapper
+        mergeLeaves leaves key currentMetaWrapper =
+            case Dict.get key leaves of
+                Nothing ->
+                    currentMetaWrapper
+
+                Just leaveValues ->
+                    let
+                        leftRefs =
+                            List.map .phx_ref leaveValues.metas
+                    in
+                        currentMetaWrapper.metas
+                            |> List.filter
+                                (\metaValue ->
+                                    not (List.any (\phx_ref -> metaValue.phx_ref == phx_ref) leftRefs)
+                                )
+                            |> PresenceStateMetaWrapper
+
+        mergeJoins : PresenceState -> PresenceState -> PresenceState
+        mergeJoins left right =
+            let
+                inBoth : comparable -> PresenceStateMetaWrapper -> PresenceStateMetaWrapper -> PresenceState -> PresenceState
+                inBoth key leftValue rightValue acc =
+                    acc |> Dict.insert key (PresenceStateMetaWrapper (leftValue.metas ++ rightValue.metas))
+            in
+                Dict.merge Dict.insert
+                    inBoth
+                    Dict.insert
+                    left
+                    right
+                    Dict.empty
+    in
+        state
+            |> mergeJoins diff.joins
+            |> Dict.map (mergeLeaves diff.leaves)
+            |> Dict.filter (\_ metaWrapper -> metaWrapper.metas /= [])
