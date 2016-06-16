@@ -311,3 +311,13 @@ subscriptions model =
 init : ( Model, Cmd Msg )
 init =
     ( initialModel, Cmd.none )
+
+
+syncState : PresenceState -> PresenceState -> PresenceState
+syncState newState state =
+    newState
+
+
+syncDiff : PresenceDiff -> PresenceState -> PresenceState
+syncDiff diff state =
+    diff.joins
