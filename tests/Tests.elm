@@ -138,7 +138,6 @@ syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
             fixtures.empty
                 |> Dict.insert "u1" u1PresenceStateMetaWrapper
                 |> Dict.insert "u2" u2PresenceStateMetaWrapper
-                |> Dict.insert "u3" u3PresenceStateMetaWrapper
 
         initialState =
             Dict.empty
@@ -146,7 +145,6 @@ syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
 
         newState =
             initialState
-                |> syncDiff diff1
                 |> syncDiff diff2
     in
         expectedState `equals` newState
