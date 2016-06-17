@@ -122,7 +122,7 @@ syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
     let
         joins =
             Dict.empty
-                |> Dict.insert "u1" u3PresenceStateMetaWrapper
+                |> Dict.insert "u1" u1PresenceStateMetaWrapper
 
         diff =
             PresenceDiff Dict.empty joins
@@ -134,7 +134,7 @@ syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
 
         initialState =
             Dict.empty
-                |> Dict.insert "u2" u1PresenceStateMetaWrapper
+                |> Dict.insert "u2" u2PresenceStateMetaWrapper
 
         newState =
             initialState
