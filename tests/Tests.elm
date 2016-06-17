@@ -120,19 +120,12 @@ syncDiffRemovesPresenceWhenMetaIsEmptyAndAddsAdditionalMeta =
 syncDiffAddsTwoNewUsersToExistingUserSuccessfully : Test
 syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
     let
-        firstJoins =
-            Dict.empty
-                |> Dict.insert "u3" u2PresenceStateMetaWrapper
-
-        secondJoins =
+        joins =
             Dict.empty
                 |> Dict.insert "u1" u3PresenceStateMetaWrapper
 
-        diff1 =
-            PresenceDiff Dict.empty firstJoins
-
-        diff2 =
-            PresenceDiff Dict.empty secondJoins
+        diff =
+            PresenceDiff Dict.empty joins
 
         expectedState =
             fixtures.empty
@@ -145,7 +138,7 @@ syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
 
         newState =
             initialState
-                |> syncDiff diff2
+                |> syncDiff diff
     in
         expectedState `equals` newState
 
