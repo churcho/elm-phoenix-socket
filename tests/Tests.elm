@@ -85,6 +85,7 @@ syncDiffTests : List Test
 syncDiffTests =
     [ syncDiffSyncsEmptyState
     , syncDiffRemovesPresenceWhenMetaIsEmptyAndAddsAdditionalMeta
+    , syncDiffAddsTwoNewUsersToExistingUserSuccessfully
     ]
 
 
@@ -114,6 +115,41 @@ syncDiffRemovesPresenceWhenMetaIsEmptyAndAddsAdditionalMeta =
                 |> Dict.insert "u3" u3PresenceStateMetaWrapper
     in
         expectedState `equals` (fixtures.state |> syncDiff diff)
+
+
+syncDiffAddsTwoNewUsersToExistingUserSuccessfully : Test
+syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
+    let
+        firstJoins =
+            Dict.empty
+                |> Dict.insert "u3" u2PresenceStateMetaWrapper
+
+        secondJoins =
+            Dict.empty
+                |> Dict.insert "u1" u3PresenceStateMetaWrapper
+
+        diff1 =
+            PresenceDiff Dict.empty firstJoins
+
+        diff2 =
+            PresenceDiff Dict.empty secondJoins
+
+        expectedState =
+            fixtures.empty
+                |> Dict.insert "u1" u1PresenceStateMetaWrapper
+                |> Dict.insert "u2" u2PresenceStateMetaWrapper
+                |> Dict.insert "u3" u3PresenceStateMetaWrapper
+
+        initialState =
+            Dict.empty
+                |> Dict.insert "u2" u1PresenceStateMetaWrapper
+
+        newState =
+            initialState
+                |> syncDiff diff1
+                |> syncDiff diff2
+    in
+        expectedState `equals` newState
 
 
 consoleTests : Test

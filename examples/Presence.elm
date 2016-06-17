@@ -42,6 +42,11 @@ type alias PresenceDiff =
 -- send.  We only support chatting in a single channel for now.
 
 
+type alias User =
+    { name : String
+    }
+
+
 type alias ChatMessage =
     { user : String
     , body : String
@@ -52,6 +57,7 @@ type alias Model =
     { newMessage : String
     , messages : List ChatMessage
     , username : String
+    , users : List User
     , phxSocket : Maybe (Phoenix.Socket.Socket Msg)
     , phxPresences : PresenceState
     }
@@ -74,6 +80,7 @@ initialModel =
     { newMessage = ""
     , messages = []
     , username = ""
+    , users = []
     , phxSocket = Nothing
     , phxPresences = Dict.empty
     }
@@ -174,8 +181,15 @@ update msg model =
                     let
                         _ =
                             Debug.log "PresenceState" presenceState
+
+                        newPresenceState =
+                            model.phxPresences |> syncState presenceState
+
+                        users =
+                            Dict.keys presenceState
+                                |> List.map User
                     in
-                        model ! []
+                        { model | users = users, phxPresences = newPresenceState } ! []
 
                 Err error ->
                     let
@@ -190,8 +204,15 @@ update msg model =
                     let
                         _ =
                             Debug.log "PresenceDiff" presenceDiff
+
+                        newPresenceState =
+                            model.phxPresences |> syncDiff presenceDiff
+
+                        users =
+                            Dict.keys newPresenceState
+                                |> List.map User
                     in
-                        model ! []
+                        { model | users = users, phxPresences = newPresenceState } ! []
 
                 Err error ->
                     let
@@ -263,12 +284,26 @@ messageInputView model =
         [ input [ placeholder "Message...", onInput SetNewMessage, value model.newMessage ] [] ]
 
 
+userListView : Model -> Html Msg
+userListView model =
+    ul [ class "users" ]
+        (List.map userView model.users)
+
+
+userView : User -> Html Msg
+userView user =
+    li []
+        [ text user.name
+        ]
+
+
 chatInterfaceView : Model -> Html Msg
 chatInterfaceView model =
     div []
         [ lobbyManagementView
         , messageListView model
         , messageInputView model
+        , userListView model
         ]
 
 
