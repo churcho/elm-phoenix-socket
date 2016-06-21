@@ -17,70 +17,65 @@ import Json.Decode as JD exposing ((:=))
 -- TYPES
 
 
-type alias PresenceState =
-    Dict String PresenceStateMetaWrapper
+type alias PresenceState a =
+    Dict String (PresenceStateMetaWrapper a)
 
 
-type alias PresenceStateMetaWrapper =
-    { metas : List PresenceStateMetaValue }
+type alias PresenceStateMetaWrapper a =
+    { metas : List (PresenceStateMetaValue a) }
 
 
-type alias PresenceStateMetaValue =
-    { phx_ref : String
-    , online_at : String
-    , device : String
-    }
+type alias PresenceStateMetaValue a =
+    { a | phx_ref : String }
 
 
-type alias PresenceDiff =
-    { leaves : PresenceState
-    , joins : PresenceState
+type alias PresenceDiff a =
+    { leaves : PresenceState a
+    , joins : PresenceState a
     }
 
 
 
 -- Json Decoders
+--presenceDiffDecoder : JD.Decoder a -> JD.Decoder (PresenceDiff a)
 
 
-presenceDiffDecoder : JD.Decoder PresenceDiff
-presenceDiffDecoder =
+presenceDiffDecoder baseDecoder =
     JD.object2 PresenceDiff
-        ("leaves" := presenceStateDecoder)
-        ("joins" := presenceStateDecoder)
+        ("leaves" := presenceStateDecoder baseDecoder)
+        ("joins" := presenceStateDecoder baseDecoder)
 
 
-presenceStateDecoder : JD.Decoder PresenceState
-presenceStateDecoder =
-    JD.dict presenceStateMetaWrapperDecoder
+
+--presenceStateDecoder : JD.Decoder a -> JD.Decoder (PresenceState a)
 
 
-presenceStateMetaWrapperDecoder : JD.Decoder PresenceStateMetaWrapper
-presenceStateMetaWrapperDecoder =
+presenceStateDecoder baseDecoder =
+    JD.dict (presenceStateMetaWrapperDecoder baseDecoder)
+
+
+
+--presenceStateMetaWrapperDecoder : JD.Decoder a -> JD.Decoder (PresenceStateMetaWrapper a)
+
+
+presenceStateMetaWrapperDecoder baseDecoder =
     JD.object1 PresenceStateMetaWrapper
-        ("metas" := JD.list presenceStateMetaDecoder)
-
-
-presenceStateMetaDecoder : JD.Decoder PresenceStateMetaValue
-presenceStateMetaDecoder =
-    JD.object3 PresenceStateMetaValue
-        ("phx_ref" := JD.string)
-        ("online_at" := JD.string)
-        ("device" := JD.string)
+        ("metas" := JD.list baseDecoder)
 
 
 
 -- API
 
 
-syncState : PresenceState -> PresenceState -> PresenceState
+syncState : PresenceState a -> PresenceState a -> PresenceState a
 syncState newState state =
     newState
 
 
-syncDiff : PresenceDiff -> PresenceState -> PresenceState
+syncDiff : PresenceDiff a -> PresenceState a -> PresenceState a
 syncDiff diff state =
     let
-        mergeLeaves : PresenceState -> String -> PresenceStateMetaWrapper -> PresenceStateMetaWrapper
+        mergeLeaves : PresenceState a -> String -> PresenceStateMetaWrapper a -> PresenceStateMetaWrapper a
         mergeLeaves leaves key currentMetaWrapper =
             case Dict.get key leaves of
                 Nothing ->
@@ -98,10 +93,10 @@ syncDiff diff state =
                                 )
                             |> PresenceStateMetaWrapper
 
-        mergeJoins : PresenceState -> PresenceState -> PresenceState
+        mergeJoins : PresenceState a -> PresenceState a -> PresenceState a
         mergeJoins left right =
             let
-                inBoth : comparable -> PresenceStateMetaWrapper -> PresenceStateMetaWrapper -> PresenceState -> PresenceState
+                inBoth : comparable -> PresenceStateMetaWrapper a -> PresenceStateMetaWrapper a -> PresenceState a -> PresenceState a
                 inBoth key leftValue rightValue acc =
                     acc |> Dict.insert key (PresenceStateMetaWrapper (leftValue.metas ++ rightValue.metas))
             in

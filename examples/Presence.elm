@@ -23,6 +23,13 @@ type alias User =
     }
 
 
+type alias UserPresence =
+    { phx_ref : String
+    , online_at : String
+    , device : String
+    }
+
+
 type alias ChatMessage =
     { user : String
     , body : String
@@ -35,7 +42,7 @@ type alias Model =
     , username : String
     , users : List User
     , phxSocket : Maybe (Phoenix.Socket.Socket Msg)
-    , phxPresences : PresenceState
+    , phxPresences : PresenceState UserPresence
     }
 
 
@@ -152,12 +159,9 @@ update msg model =
             { model | phxSocket = Just (initPhxSocket model.username) } ! []
 
         HandlePresenceState raw ->
-            case JD.decodeValue presenceStateDecoder raw of
+            case JD.decodeValue (presenceStateDecoder userPresenceDecoder) raw of
                 Ok presenceState ->
                     let
-                        _ =
-                            Debug.log "PresenceState" presenceState
-
                         newPresenceState =
                             model.phxPresences |> syncState presenceState
 
@@ -175,12 +179,9 @@ update msg model =
                         model ! []
 
         HandlePresenceDiff raw ->
-            case JD.decodeValue presenceDiffDecoder raw of
+            case JD.decodeValue (presenceDiffDecoder userPresenceDecoder) raw of
                 Ok presenceDiff ->
                     let
-                        _ =
-                            Debug.log "PresenceDiff" presenceDiff
-
                         newPresenceState =
                             model.phxPresences |> syncDiff presenceDiff
 
@@ -207,6 +208,14 @@ chatMessageDecoder =
             ]
         )
         ("body" := JD.string)
+
+
+userPresenceDecoder : JD.Decoder UserPresence
+userPresenceDecoder =
+    JD.object3 UserPresence
+        ("phx_ref" := JD.string)
+        ("online_at" := JD.string)
+        ("device" := JD.string)
 
 
 viewMessage : ChatMessage -> Html Msg
