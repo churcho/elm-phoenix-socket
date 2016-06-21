@@ -1,7 +1,7 @@
 module Tests exposing (..)
 
 import ElmTest exposing (..)
-import Presence exposing (syncState, syncDiff, PresenceState, PresenceDiff, PresenceStateMetaValue, PresenceStateMetaWrapper)
+import Phoenix.Presence exposing (syncState, syncDiff, PresenceState, PresenceDiff, PresenceStateMetaValue, PresenceStateMetaWrapper)
 import Dict
 
 
