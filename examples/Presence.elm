@@ -24,8 +24,7 @@ type alias User =
 
 
 type alias UserPresence =
-    { phx_ref : String
-    , online_at : String
+    { online_at : String
     , device : String
     }
 
@@ -212,8 +211,7 @@ chatMessageDecoder =
 
 userPresenceDecoder : JD.Decoder UserPresence
 userPresenceDecoder =
-    JD.object3 UserPresence
-        ("phx_ref" := JD.string)
+    JD.object2 UserPresence
         ("online_at" := JD.string)
         ("device" := JD.string)
 

@@ -26,7 +26,7 @@ type alias PresenceStateMetaWrapper a =
 
 
 type alias PresenceStateMetaValue a =
-    { a | phx_ref : String }
+    { phx_ref : String, payload : a }
 
 
 type alias PresenceDiff a =
@@ -37,30 +37,36 @@ type alias PresenceDiff a =
 
 
 -- Json Decoders
---presenceDiffDecoder : JD.Decoder a -> JD.Decoder (PresenceDiff a)
 
 
+presenceDiffDecoder : JD.Decoder a -> JD.Decoder (PresenceDiff a)
 presenceDiffDecoder baseDecoder =
     JD.object2 PresenceDiff
         ("leaves" := presenceStateDecoder baseDecoder)
         ("joins" := presenceStateDecoder baseDecoder)
 
 
-
---presenceStateDecoder : JD.Decoder a -> JD.Decoder (PresenceState a)
-
-
+presenceStateDecoder : JD.Decoder a -> JD.Decoder (PresenceState a)
 presenceStateDecoder baseDecoder =
     JD.dict (presenceStateMetaWrapperDecoder baseDecoder)
 
 
-
---presenceStateMetaWrapperDecoder : JD.Decoder a -> JD.Decoder (PresenceStateMetaWrapper a)
-
-
+presenceStateMetaWrapperDecoder : JD.Decoder a -> JD.Decoder (PresenceStateMetaWrapper a)
 presenceStateMetaWrapperDecoder baseDecoder =
     JD.object1 PresenceStateMetaWrapper
-        ("metas" := JD.list baseDecoder)
+        ("metas" := JD.list (presenceStateMetaValueDecoder baseDecoder))
+
+
+presenceStateMetaValueDecoder : JD.Decoder a -> JD.Decoder (PresenceStateMetaValue a)
+presenceStateMetaValueDecoder baseDecoder =
+    let
+        createFinalRecord phxRef payload =
+            JD.succeed { phx_ref = phxRef, payload = payload }
+
+        decodeWithPhxRef phxRef =
+            baseDecoder `JD.andThen` (createFinalRecord phxRef)
+    in
+        ("phx_ref" := JD.string) `JD.andThen` decodeWithPhxRef
 
 
 
