@@ -8,6 +8,8 @@ module Phoenix.Presence
         , syncDiff
         , presenceStateDecoder
         , presenceDiffDecoder
+        , listDefault
+        , list
         )
 
 import Dict exposing (Dict)
@@ -71,6 +73,16 @@ presenceStateMetaValueDecoder baseDecoder =
 
 
 -- API
+
+
+listDefault : PresenceState a -> List (PresenceStateMetaWrapper a)
+listDefault =
+    Dict.values
+
+
+list : (String -> PresenceStateMetaWrapper a -> Maybe b) -> PresenceState a -> List (Maybe b)
+list mapper =
+    Dict.map mapper >> Dict.values
 
 
 syncState : PresenceState a -> PresenceState a -> PresenceState a

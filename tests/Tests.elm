@@ -1,19 +1,30 @@
 module Tests exposing (..)
 
 import ElmTest exposing (..)
-import Phoenix.Presence exposing (syncState, syncDiff, PresenceState, PresenceDiff, PresenceStateMetaValue, PresenceStateMetaWrapper)
-import Dict
+import Phoenix.Presence
+    exposing
+        ( list
+        , listDefault
+        , syncState
+        , syncDiff
+        , PresenceState
+        , PresenceDiff
+        , PresenceStateMetaValue
+        , PresenceStateMetaWrapper
+        )
+import Presence exposing (UserPresence)
+import Dict exposing (Dict)
 
 
 -- FIXTURES -------------------------------------
 
 
-sampleMeta : PresenceStateMetaValue
+sampleMeta : PresenceStateMetaValue UserPresence
 sampleMeta =
-    PresenceStateMetaValue "1" "sometime" "browser"
+    PresenceStateMetaValue "1" (UserPresence "sometime" "browser")
 
 
-u1PresenceStateMetaWrapper : PresenceStateMetaWrapper
+u1PresenceStateMetaWrapper : PresenceStateMetaWrapper UserPresence
 u1PresenceStateMetaWrapper =
     { metas =
         [ sampleMeta
@@ -21,7 +32,7 @@ u1PresenceStateMetaWrapper =
     }
 
 
-u1PresenceStateMetaWrapperAddition : PresenceStateMetaWrapper
+u1PresenceStateMetaWrapperAddition : PresenceStateMetaWrapper UserPresence
 u1PresenceStateMetaWrapperAddition =
     { metas =
         [ { sampleMeta | phx_ref = "1.2" }
@@ -29,7 +40,7 @@ u1PresenceStateMetaWrapperAddition =
     }
 
 
-u1PresenceStateMetaWrapperWithAddition : PresenceStateMetaWrapper
+u1PresenceStateMetaWrapperWithAddition : PresenceStateMetaWrapper UserPresence
 u1PresenceStateMetaWrapperWithAddition =
     { metas =
         [ { sampleMeta | phx_ref = "1.2" }
@@ -38,7 +49,7 @@ u1PresenceStateMetaWrapperWithAddition =
     }
 
 
-u2PresenceStateMetaWrapper : PresenceStateMetaWrapper
+u2PresenceStateMetaWrapper : PresenceStateMetaWrapper UserPresence
 u2PresenceStateMetaWrapper =
     { metas =
         [ { sampleMeta | phx_ref = "2" }
@@ -46,7 +57,7 @@ u2PresenceStateMetaWrapper =
     }
 
 
-u3PresenceStateMetaWrapper : PresenceStateMetaWrapper
+u3PresenceStateMetaWrapper : PresenceStateMetaWrapper UserPresence
 u3PresenceStateMetaWrapper =
     { metas =
         [ { sampleMeta | phx_ref = "3" }
@@ -54,7 +65,7 @@ u3PresenceStateMetaWrapper =
     }
 
 
-fixtures : { joins : PresenceState, leaves : PresenceState, empty : PresenceState, state : PresenceState }
+fixtures : { joins : PresenceState UserPresence, leaves : PresenceState UserPresence, empty : PresenceState UserPresence, state : PresenceState UserPresence }
 fixtures =
     { joins =
         Dict.empty
@@ -86,6 +97,13 @@ syncDiffTests =
     [ syncDiffSyncsEmptyState
     , syncDiffRemovesPresenceWhenMetaIsEmptyAndAddsAdditionalMeta
     , syncDiffAddsTwoNewUsersToExistingUserSuccessfully
+    ]
+
+
+listTests : List Test
+listTests =
+    [ listListsFullPresenceByDefault
+    , listListsWithCustomFunction
     ]
 
 
@@ -143,9 +161,46 @@ syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
         expectedState `equals` newState
 
 
+listListsFullPresenceByDefault : Test
+listListsFullPresenceByDefault =
+    let
+        initialState =
+            Dict.empty
+                |> Dict.insert "u1" u1PresenceStateMetaWrapperWithAddition
+
+        result =
+            initialState |> listDefault
+
+        expected =
+            [ u1PresenceStateMetaWrapperWithAddition ]
+    in
+        result `equals` expected
+
+
+listListsWithCustomFunction : Test
+listListsWithCustomFunction =
+    let
+        initialState : PresenceState UserPresence
+        initialState =
+            Dict.empty
+                |> Dict.insert "u1" u1PresenceStateMetaWrapperWithAddition
+
+        listBy : String -> PresenceStateMetaWrapper UserPresence -> Maybe (PresenceStateMetaValue UserPresence)
+        listBy key wrapper =
+            List.head wrapper.metas
+
+        result =
+            initialState |> list listBy
+
+        expected =
+            [ Just { sampleMeta | phx_ref = "1.2" } ]
+    in
+        result `equals` expected
+
+
 consoleTests : Test
 consoleTests =
-    suite "All Tests" (syncStateTests ++ syncDiffTests)
+    suite "All Tests" (syncStateTests ++ syncDiffTests ++ listTests)
 
 
 main =
