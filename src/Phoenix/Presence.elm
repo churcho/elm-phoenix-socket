@@ -19,24 +19,23 @@ import Json.Decode as JD exposing ((:=))
 -- TYPES
 
 
-type alias PresenceState =
-    Dict String PresenceStateMetaWrapper
+type alias PresenceState a =
+    Dict String (PresenceStateMetaWrapper a)
 
 
-type alias PresenceStateMetaWrapper =
-    { metas : List PresenceStateMetaValue }
+type alias PresenceStateMetaWrapper a =
+    { metas : List (PresenceStateMetaValue a) }
 
 
-type alias PresenceStateMetaValue =
+type alias PresenceStateMetaValue a =
     { phx_ref : String
-    , online_at : String
-    , device : String
+    , payload : a
     }
 
 
-type alias PresenceDiff =
-    { leaves : PresenceState
-    , joins : PresenceState
+type alias PresenceDiff a =
+    { leaves : PresenceState a
+    , joins : PresenceState a
     }
 
 
@@ -44,55 +43,59 @@ type alias PresenceDiff =
 -- Json Decoders
 
 
-presenceDiffDecoder : JD.Decoder PresenceDiff
-presenceDiffDecoder =
+presenceDiffDecoder : JD.Decoder a -> JD.Decoder (PresenceDiff a)
+presenceDiffDecoder payloadDecoder =
     JD.object2 PresenceDiff
-        ("leaves" := presenceStateDecoder)
-        ("joins" := presenceStateDecoder)
+        ("leaves" := presenceStateDecoder payloadDecoder)
+        ("joins" := presenceStateDecoder payloadDecoder)
 
 
-presenceStateDecoder : JD.Decoder PresenceState
-presenceStateDecoder =
-    JD.dict presenceStateMetaWrapperDecoder
+presenceStateDecoder : JD.Decoder a -> JD.Decoder (PresenceState a)
+presenceStateDecoder payloadDecoder =
+    JD.dict (presenceStateMetaWrapperDecoder payloadDecoder)
 
 
-presenceStateMetaWrapperDecoder : JD.Decoder PresenceStateMetaWrapper
-presenceStateMetaWrapperDecoder =
+presenceStateMetaWrapperDecoder : JD.Decoder a -> JD.Decoder (PresenceStateMetaWrapper a)
+presenceStateMetaWrapperDecoder payloadDecoder =
     JD.object1 PresenceStateMetaWrapper
-        ("metas" := JD.list presenceStateMetaDecoder)
+        ("metas" := JD.list (presenceStateMetaDecoder payloadDecoder))
 
 
-presenceStateMetaDecoder : JD.Decoder PresenceStateMetaValue
-presenceStateMetaDecoder =
-    JD.object3 PresenceStateMetaValue
-        ("phx_ref" := JD.string)
-        ("online_at" := JD.string)
-        ("device" := JD.string)
+presenceStateMetaDecoder : JD.Decoder a -> JD.Decoder (PresenceStateMetaValue a)
+presenceStateMetaDecoder payloadDecoder =
+    let
+        createFinalRecord phxRef payload =
+            JD.succeed (PresenceStateMetaValue phxRef payload)
+
+        decodeWithPhxRef phxRef =
+            payloadDecoder `JD.andThen` (createFinalRecord phxRef)
+    in
+        ("phx_ref" := JD.string) `JD.andThen` decodeWithPhxRef
 
 
 
 -- API
 
 
-listDefault : PresenceState -> List PresenceStateMetaWrapper
+listDefault : PresenceState a -> List (PresenceStateMetaWrapper a)
 listDefault =
     Dict.values
 
 
-list : (String -> PresenceStateMetaWrapper -> Maybe b) -> PresenceState -> List (Maybe b)
+list : (String -> PresenceStateMetaWrapper a -> Maybe b) -> PresenceState a -> List (Maybe b)
 list mapper =
     Dict.map mapper >> Dict.values
 
 
-syncState : PresenceState -> PresenceState -> PresenceState
+syncState : PresenceState a -> PresenceState a -> PresenceState a
 syncState newState state =
     newState
 
 
-syncDiff : PresenceDiff -> PresenceState -> PresenceState
+syncDiff : PresenceDiff a -> PresenceState a -> PresenceState a
 syncDiff diff state =
     let
-        mergeLeaves : PresenceState -> String -> PresenceStateMetaWrapper -> PresenceStateMetaWrapper
+        mergeLeaves : PresenceState a -> String -> PresenceStateMetaWrapper a -> PresenceStateMetaWrapper a
         mergeLeaves leaves key currentMetaWrapper =
             case Dict.get key leaves of
                 Nothing ->
@@ -110,10 +113,10 @@ syncDiff diff state =
                                 )
                             |> PresenceStateMetaWrapper
 
-        mergeJoins : PresenceState -> PresenceState -> PresenceState
+        mergeJoins : PresenceState a -> PresenceState a -> PresenceState a
         mergeJoins left right =
             let
-                inBoth : comparable -> PresenceStateMetaWrapper -> PresenceStateMetaWrapper -> PresenceState -> PresenceState
+                inBoth : comparable -> PresenceStateMetaWrapper a -> PresenceStateMetaWrapper a -> PresenceState a -> PresenceState a
                 inBoth key leftValue rightValue acc =
                     acc |> Dict.insert key (PresenceStateMetaWrapper (leftValue.metas ++ rightValue.metas))
             in

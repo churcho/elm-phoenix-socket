@@ -12,18 +12,19 @@ import Phoenix.Presence
         , PresenceStateMetaValue
         , PresenceStateMetaWrapper
         )
+import Presence exposing (UserPresence)
 import Dict exposing (Dict)
 
 
 -- FIXTURES -------------------------------------
 
 
-sampleMeta : PresenceStateMetaValue
+sampleMeta : PresenceStateMetaValue UserPresence
 sampleMeta =
-    PresenceStateMetaValue "1" "sometime" "browser"
+    PresenceStateMetaValue "1" (UserPresence "sometime" "browser")
 
 
-u1PresenceStateMetaWrapper : PresenceStateMetaWrapper
+u1PresenceStateMetaWrapper : PresenceStateMetaWrapper UserPresence
 u1PresenceStateMetaWrapper =
     { metas =
         [ sampleMeta
@@ -31,7 +32,7 @@ u1PresenceStateMetaWrapper =
     }
 
 
-u1PresenceStateMetaWrapperAddition : PresenceStateMetaWrapper
+u1PresenceStateMetaWrapperAddition : PresenceStateMetaWrapper UserPresence
 u1PresenceStateMetaWrapperAddition =
     { metas =
         [ { sampleMeta | phx_ref = "1.2" }
@@ -39,7 +40,7 @@ u1PresenceStateMetaWrapperAddition =
     }
 
 
-u1PresenceStateMetaWrapperWithAddition : PresenceStateMetaWrapper
+u1PresenceStateMetaWrapperWithAddition : PresenceStateMetaWrapper UserPresence
 u1PresenceStateMetaWrapperWithAddition =
     { metas =
         [ { sampleMeta | phx_ref = "1.2" }
@@ -48,7 +49,7 @@ u1PresenceStateMetaWrapperWithAddition =
     }
 
 
-u2PresenceStateMetaWrapper : PresenceStateMetaWrapper
+u2PresenceStateMetaWrapper : PresenceStateMetaWrapper UserPresence
 u2PresenceStateMetaWrapper =
     { metas =
         [ { sampleMeta | phx_ref = "2" }
@@ -56,7 +57,7 @@ u2PresenceStateMetaWrapper =
     }
 
 
-u3PresenceStateMetaWrapper : PresenceStateMetaWrapper
+u3PresenceStateMetaWrapper : PresenceStateMetaWrapper UserPresence
 u3PresenceStateMetaWrapper =
     { metas =
         [ { sampleMeta | phx_ref = "3" }
@@ -64,7 +65,7 @@ u3PresenceStateMetaWrapper =
     }
 
 
-fixtures : { joins : PresenceState, leaves : PresenceState, empty : PresenceState, state : PresenceState }
+fixtures : { joins : PresenceState UserPresence, leaves : PresenceState UserPresence, empty : PresenceState UserPresence, state : PresenceState UserPresence }
 fixtures =
     { joins =
         Dict.empty
@@ -179,12 +180,12 @@ listListsFullPresenceByDefault =
 listListsWithCustomFunction : Test
 listListsWithCustomFunction =
     let
-        initialState : PresenceState
+        initialState : PresenceState UserPresence
         initialState =
             Dict.empty
                 |> Dict.insert "u1" u1PresenceStateMetaWrapperWithAddition
 
-        listBy : String -> PresenceStateMetaWrapper -> Maybe PresenceStateMetaValue
+        listBy : String -> PresenceStateMetaWrapper UserPresence -> Maybe (PresenceStateMetaValue UserPresence)
         listBy key wrapper =
             List.head wrapper.metas
 
