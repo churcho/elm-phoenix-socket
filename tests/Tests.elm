@@ -1,8 +1,18 @@
 module Tests exposing (..)
 
 import ElmTest exposing (..)
-import Phoenix.Presence exposing (syncState, syncDiff, PresenceState, PresenceDiff, PresenceStateMetaValue, PresenceStateMetaWrapper)
-import Dict
+import Phoenix.Presence
+    exposing
+        ( list
+        , listDefault
+        , syncState
+        , syncDiff
+        , PresenceState
+        , PresenceDiff
+        , PresenceStateMetaValue
+        , PresenceStateMetaWrapper
+        )
+import Dict exposing (Dict)
 
 
 -- FIXTURES -------------------------------------
@@ -89,6 +99,13 @@ syncDiffTests =
     ]
 
 
+listTests : List Test
+listTests =
+    [ listListsFullPresenceByDefault
+    , listListsWithCustomFunction
+    ]
+
+
 syncStateSyncsEmptyState : Test
 syncStateSyncsEmptyState =
     fixtures.joins `equals` (fixtures.empty |> syncState fixtures.joins)
@@ -143,9 +160,46 @@ syncDiffAddsTwoNewUsersToExistingUserSuccessfully =
         expectedState `equals` newState
 
 
+listListsFullPresenceByDefault : Test
+listListsFullPresenceByDefault =
+    let
+        initialState =
+            Dict.empty
+                |> Dict.insert "u1" u1PresenceStateMetaWrapperWithAddition
+
+        result =
+            initialState |> listDefault
+
+        expected =
+            [ u1PresenceStateMetaWrapperWithAddition ]
+    in
+        result `equals` expected
+
+
+listListsWithCustomFunction : Test
+listListsWithCustomFunction =
+    let
+        initialState : PresenceState
+        initialState =
+            Dict.empty
+                |> Dict.insert "u1" u1PresenceStateMetaWrapperWithAddition
+
+        listBy : String -> PresenceStateMetaWrapper -> Maybe PresenceStateMetaValue
+        listBy key wrapper =
+            List.head wrapper.metas
+
+        result =
+            initialState |> list listBy
+
+        expected =
+            [ Just { sampleMeta | phx_ref = "1.2" } ]
+    in
+        result `equals` expected
+
+
 consoleTests : Test
 consoleTests =
-    suite "All Tests" (syncStateTests ++ syncDiffTests)
+    suite "All Tests" (syncStateTests ++ syncDiffTests ++ listTests)
 
 
 main =
