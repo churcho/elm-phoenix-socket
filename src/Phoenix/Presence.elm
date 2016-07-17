@@ -12,6 +12,12 @@ module Phoenix.Presence
         , list
         )
 
+{-|
+
+@docs PresenceState, PresenceStateMetaWrapper, PresenceStateMetaValue, PresenceDiff, syncState, syncDiff, presenceStateDecoder, presenceDiffDecoder, listDefault, list
+
+-}
+
 import Dict exposing (Dict)
 import Json.Decode as JD exposing ((:=))
 
@@ -19,20 +25,28 @@ import Json.Decode as JD exposing ((:=))
 -- TYPES
 
 
+{-| Represents the Phoenix Presence State
+-}
 type alias PresenceState a =
     Dict String (PresenceStateMetaWrapper a)
 
 
+{-| Represents the metas for a given Presence key
+-}
 type alias PresenceStateMetaWrapper a =
     { metas : List (PresenceStateMetaValue a) }
 
 
+{-| Represents the payload for a given meta value
+-}
 type alias PresenceStateMetaValue a =
     { phx_ref : String
     , payload : a
     }
 
 
+{-| Represents a diff of presence states
+-}
 type alias PresenceDiff a =
     { leaves : PresenceState a
     , joins : PresenceState a
@@ -43,6 +57,8 @@ type alias PresenceDiff a =
 -- Json Decoders
 
 
+{-| Decodes a PresenceDiff, parameterized on the type of your application-defined payload
+-}
 presenceDiffDecoder : JD.Decoder a -> JD.Decoder (PresenceDiff a)
 presenceDiffDecoder payloadDecoder =
     JD.object2 PresenceDiff
@@ -50,17 +66,23 @@ presenceDiffDecoder payloadDecoder =
         ("joins" := presenceStateDecoder payloadDecoder)
 
 
+{-| Decodes a PresenceState, parameterized on the type of your application-defined payload
+-}
 presenceStateDecoder : JD.Decoder a -> JD.Decoder (PresenceState a)
 presenceStateDecoder payloadDecoder =
     JD.dict (presenceStateMetaWrapperDecoder payloadDecoder)
 
 
+{-| Decodes a PresenceStateMetaWrapper, parameterized on the type of your application-defined payload
+-}
 presenceStateMetaWrapperDecoder : JD.Decoder a -> JD.Decoder (PresenceStateMetaWrapper a)
 presenceStateMetaWrapperDecoder payloadDecoder =
     JD.object1 PresenceStateMetaWrapper
         ("metas" := JD.list (presenceStateMetaDecoder payloadDecoder))
 
 
+{-| Decodes a PresenceStateMetaValue, parameterized on the type of your application-defined payload
+-}
 presenceStateMetaDecoder : JD.Decoder a -> JD.Decoder (PresenceStateMetaValue a)
 presenceStateMetaDecoder payloadDecoder =
     let
@@ -77,21 +99,29 @@ presenceStateMetaDecoder payloadDecoder =
 -- API
 
 
+{-| Return the metas for a given PresenceState
+-}
 listDefault : PresenceState a -> List (PresenceStateMetaWrapper a)
 listDefault =
     Dict.values
 
 
+{-| Return the metas for a given PresenceState, mapped through a provided mapping function
+-}
 list : (String -> PresenceStateMetaWrapper a -> Maybe b) -> PresenceState a -> List (Maybe b)
 list mapper =
     Dict.map mapper >> Dict.values
 
 
+{-| Synchronize state - this is a really silly function presently, because this client does not provide callbacks as they make little-to-no sense in Elm.
+-}
 syncState : PresenceState a -> PresenceState a -> PresenceState a
 syncState newState state =
     newState
 
 
+{-| Synchronize a diff using the existing state
+-}
 syncDiff : PresenceDiff a -> PresenceState a -> PresenceState a
 syncDiff diff state =
     let
